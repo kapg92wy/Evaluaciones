@@ -152,7 +152,7 @@ def guardar_tareas(lista):
         json.dump(lista, f, indent=4, ensure_ascii=False)
 
 def generar_grafica_payout(df_maquina):
-    """Genera gráfica interactiva de Payout con Plotly"""
+    """Genera gráfica interactiva de Payout con Plotly - VERSIÓN MEJORADA"""
     if df_maquina.empty:
         return None
     
@@ -170,42 +170,81 @@ def generar_grafica_payout(df_maquina):
     if datos.empty:
         return None
     
+    # Ordenar por fecha
+    datos['Fecha'] = pd.to_datetime(datos['Fecha'])
+    datos = datos.sort_values('Fecha')
+    
     semanas = datos['Semana'].tolist()
     porcentajes = datos['Payout'].astype(float).tolist()
+    ventas = datos['Venta'].astype(float).tolist()
     
-    # Crear gráfica
+    # Crear gráfica con dos ejes Y
     fig = go.Figure()
     
-    # Zona ideal (verde)
+    # Zona ideal (verde) - SOLO EN EL EJE IZQUIERDO
     fig.add_hrect(
         y0=target_min, y1=target_max,
-        fillcolor="green", opacity=0.2,
+        fillcolor="lightgreen", opacity=0.3,
         layer="below", line_width=0,
         annotation_text=f"Rango Ideal ({target_min}%-{target_max}%)",
         annotation_position="top left"
     )
     
-    # Línea de datos
-    colores = ['red' if (p < target_min or p > target_max) else '#007bff' for p in porcentajes]
+    # Línea de Payout (eje izquierdo)
+    colores = ['red' if (p < target_min or p > target_max) else '#28a745' for p in porcentajes]
     
     fig.add_trace(go.Scatter(
         x=semanas, y=porcentajes,
         mode='lines+markers',
-        name='Payout Real',
+        name='Payout (%)',
         line=dict(color='#007bff', width=3),
-        marker=dict(size=10, color=colores)
+        marker=dict(size=12, color=colores, line=dict(width=2, color='white')),
+        hovertemplate='<b>%{x}</b><br>Payout: %{y:.1f}%<extra></extra>',
+        yaxis='y1'
+    ))
+    
+    # Línea de Ventas (eje derecho)
+    fig.add_trace(go.Scatter(
+        x=semanas, y=ventas,
+        mode='lines+markers',
+        name='Ventas ($)',
+        line=dict(color='#ffc107', width=2, dash='dash'),
+        marker=dict(size=8, color='#ffc107'),
+        hovertemplate='<b>%{x}</b><br>Venta: $%{y:,.0f}<extra></extra>',
+        yaxis='y2'
     ))
     
     fig.update_layout(
-        title="Comportamiento de Payout (Premios vs Venta)",
-        xaxis_title="Semana",
-        yaxis_title="Porcentaje (%)",
+        title={
+            'text': "Comportamiento de Payout vs Ventas",
+            'x': 0.5,
+            'xanchor': 'center'
+        },
+        xaxis=dict(title="Semana", tickangle=-45),
+        yaxis=dict(
+            title="Payout (%)",
+            titlefont=dict(color="#007bff"),
+            tickfont=dict(color="#007bff")
+        ),
+        yaxis2=dict(
+            title="Ventas ($)",
+            titlefont=dict(color="#ffc107"),
+            tickfont=dict(color="#ffc107"),
+            overlaying='y',
+            side='right'
+        ),
         hovermode='x unified',
-        height=400
+        height=500,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
     )
     
     return fig
-
 # ==================== INICIALIZACIÓN ====================
 iniciar_archivos()
 
@@ -1035,6 +1074,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
