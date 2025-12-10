@@ -706,10 +706,27 @@ def gestionar_maquinas():
             
             with col2:
                 if st.button(f"🗑️ Eliminar", key=f"del_{maquina['nombre']}"):
+                    nombre_maq = maquina['nombre']
+
+                    # Desactivar máquina
                     maquina['activa'] = False
                     save_maquinas(maquinas)
-                    st.success("Máquina eliminada")
+
+                    # Borrar evaluaciones de esa máquina
+                    if ARCHIVO_RESULTADOS.exists():
+                        df_res = pd.read_csv(ARCHIVO_RESULTADOS, encoding='utf-8-sig')
+                        df_res = df_res[df_res['Maquina'] != nombre_maq]
+                        df_res.to_csv(ARCHIVO_RESULTADOS, index=False, encoding='utf-8-sig')
+
+                    # Borrar payout de esa máquina
+                    if ARCHIVO_PAYOUT.exists():
+                        df_pay = pd.read_csv(ARCHIVO_PAYOUT, encoding='utf-8-sig')
+                        df_pay = df_pay[df_pay['Maquina'] != nombre_maq]
+                        df_pay.to_csv(ARCHIVO_PAYOUT, index=False, encoding='utf-8-sig')
+
+                    st.success(f"Máquina '{nombre_maq}' eliminada completamente")
                     st.rerun()
+
 
 def gestionar_tareas():
     """Gestión de tareas y misiones"""
@@ -935,4 +952,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
