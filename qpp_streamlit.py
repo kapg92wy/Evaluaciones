@@ -851,18 +851,26 @@ def mostrar_detalle_evaluaciones(maquina):
     # Radar chart
     agrupado = df_std.groupby('Criterio')['Calificacion'].mean().reset_index()
     
-    if not agrupado.empty:
-        fig = go.Figure(data=go.Scatterpolar(
+    # Si no hay nada que graficar → gráfica vacía para evitar NameError
+    if agrupado.empty:
+        fig_radar = go.Figure()
+        fig_radar.update_layout(
+            title="Radar no disponible (sin evaluaciones)",
+            polar=dict(radialaxis=dict(visible=True, range=[0, 3]))
+        )
+    else:
+        fig_radar = go.Figure(data=go.Scatterpolar(
             r=agrupado['Calificacion'],
             theta=agrupado['Criterio'],
             fill='toself'
         ))
-        fig.update_layout(
+        fig_radar.update_layout(
             polar=dict(radialaxis=dict(visible=True, range=[0, 3])),
             showlegend=False,
             title="Fortalezas y Debilidades"
         )
-        st.plotly_chart(fig, use_container_width=True)
+
+    st.plotly_chart(fig_radar, use_container_width=True)
     
         # ===========================
         # 4. CARGAR PAYOUT (para OnePage)
@@ -1027,6 +1035,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
