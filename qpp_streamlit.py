@@ -922,10 +922,10 @@ def mostrar_detalle_evaluaciones(maquina):
         <h2>Aprobación Global: {score:.1f}%</h2>
         <hr>
         <h3>Radar de Criterios</h3>
-        {pio.to_html(fig_radar, include_plotlyjs=False, full_html=False)}
+        {pio.to_html(fig_radar, include_plotlyjs='cdn', full_html=False)}
         <hr>
         <h3>Histórico de Payout</h3>
-        {pio.to_html(fig_payout, include_plotlyjs=False, full_html=False)}
+        {pio.to_html(fig_payout, include_plotlyjs='cdn', full_html=False)}
         <hr>
         <h3>Conclusión Ejecutiva</h3>
         <p><strong>
@@ -1035,6 +1035,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
