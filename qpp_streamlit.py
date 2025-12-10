@@ -6,6 +6,9 @@ from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
 from pathlib import Path
+import io
+import base64
+import plotly.io as pio
 
 # ==================== CONFIGURACIÓN ====================
 st.set_page_config(
@@ -844,7 +847,7 @@ def mostrar_detalle_evaluaciones(maquina):
         score = (puntaje / 3.0) * 100
         
         st.metric("Nivel de Aprobación Global", f"{score:.1f}%")
-    
+
     # Radar chart
     agrupado = df_std.groupby('Criterio')['Calificacion'].mean().reset_index()
     
@@ -861,6 +864,77 @@ def mostrar_detalle_evaluaciones(maquina):
         )
         st.plotly_chart(fig, use_container_width=True)
     
+        # ===========================
+        # 4. CARGAR PAYOUT (para OnePage)
+        # ===========================
+        if ARCHIVO_PAYOUT.exists():
+            df_pay = pd.read_csv(ARCHIVO_PAYOUT, encoding='utf-8-sig')
+            df_pay_maq = df_pay[df_pay['Maquina'] == maquina]
+        else:
+            df_pay_maq = pd.DataFrame()
+
+        # Gráfica payout sólo si hay datos
+        if not df_pay_maq.empty:
+            fig_payout = go.Figure()
+            fig_payout.add_trace(go.Scatter(
+                x=df_pay_maq['Fecha'],
+                y=df_pay_maq['Payout'],
+                mode="lines+markers"
+            ))
+            fig_payout.update_layout(title="Histórico de Payout (%)")
+        else:
+            fig_payout = go.Figure()  # vacío para onepage
+
+        # ===========================
+        # 5. DESCARGAR EXCEL
+        # ===========================
+        def generar_excel_maquina(df_eval, df_pay, maquina):
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df_eval.to_excel(writer, index=False, sheet_name='Evaluaciones')
+                df_pay.to_excel(writer, index=False, sheet_name='Payout')
+            output.seek(0)
+            return output
+
+        excel_buffer = generar_excel_maquina(df_maq, df_pay_maq, maquina)
+
+        st.download_button(
+            label="📥 Descargar Excel Completo",
+            data=excel_buffer,
+            file_name=f"{maquina}_evaluacion.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+        # ===========================
+        # 6. ONE PAGE EJECUTIVO
+        # ===========================
+        def crear_onepage(maquina, score, fig_radar, fig_payout):
+            html = f"""
+            <h1 style="text-align:center;">Reporte Ejecutivo – {maquina}</h1>
+            <h2>Aprobación Global: {score:.1f}%</h2>
+            <hr>
+            <h3>Radar de Criterios</h3>
+            {pio.to_html(fig_radar, include_plotlyjs=False, full_html=False)}
+            <hr>
+            <h3>Histórico de Payout</h3>
+            {pio.to_html(fig_payout, include_plotlyjs=False, full_html=False)}
+            <hr>
+            <h3>Conclusión Ejecutiva</h3>
+            <p><strong>
+            {"✔ RECOMPRAR" if score >= 80 else "⚠ REVISAR" if score >= 60 else "❌ NO RECOMPRAR"}
+            </strong></p>
+            """
+            return html
+
+        onepage_html = crear_onepage(maquina, score, fig_radar, fig_payout)
+
+        st.download_button(
+            label="📄 Descargar One Page (HTML)",
+            data=onepage_html,
+            file_name=f"{maquina}_onepage.html",
+            mime="text/html"
+        )
+    
     # Detalles por criterio
     st.markdown("### Auditoría Desglosada")
     
@@ -874,7 +948,7 @@ def mostrar_detalle_evaluaciones(maquina):
                 <br><small>{row['Comentarios']}</small>
             </div>
             """, unsafe_allow_html=True)
-
+            
 def mostrar_detalle_payout(maquina):
     """Muestra detalle de payout de una máquina"""
     if not ARCHIVO_PAYOUT.exists():
@@ -922,6 +996,7 @@ def mostrar_detalle_payout(maquina):
     else:
         st.info("Sin registros semanales aún")
 
+
 # ==================== ROUTER PRINCIPAL ====================
 
 def main():
@@ -952,5 +1027,6 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
