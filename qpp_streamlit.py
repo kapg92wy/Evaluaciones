@@ -427,18 +427,36 @@ def pagina_evaluar():
                 })
                 
             else:
-                # Evaluación normal con sub-items
+               # Evaluación normal con sub-items
                 st.markdown("### Sub-criterios")
-                
+
                 calificaciones = []
                 detalles = []
-                
-                for idx, sub_item in enumerate(criterio['sub_items']):
-                    col1, col2, col3 = st.columns([3, 1, 2])
-                    
+
+                sub_items = criterio['sub_items'][:]  # Copia lista original
+
+                # Permitir agregar nuevos sub-items
+                nuevo_sub = st.text_input(f"➕ Agregar nuevo sub-criterio para '{criterio['criterio']}'", key=f"new_sub_{criterio['id']}")
+                if nuevo_sub:
+                    sub_items.append(nuevo_sub)
+
+                for idx, sub_item in enumerate(sub_items):
+                    col1, col2, col3, col4 = st.columns([3, 1, 2, 1])
+
                     with col1:
                         st.write(sub_item)
-                    
+
+                    with col4:
+                        no_aplica = st.checkbox(
+                            "N/A",
+                            key=f"na_{criterio['id']}_{idx}",
+                            help="Marcar si este sub-criterio no aplica"
+                        )
+
+                    if no_aplica:
+                        detalles.append(f"[{sub_item}: NO APLICA]")
+                        continue  # No agregar calificación, no promedia
+
                     with col2:
                         calif = st.number_input(
                             "Calif (1-10)",
@@ -447,7 +465,7 @@ def pagina_evaluar():
                             label_visibility="collapsed"
                         )
                         calificaciones.append(calif)
-                    
+
                     with col3:
                         comentario = st.text_input(
                             "Comentario",
@@ -456,26 +474,31 @@ def pagina_evaluar():
                             placeholder="Comentario opcional..."
                         )
                         detalles.append(f"[{sub_item}: {calif}{' - ' + comentario if comentario else ''}]")
-                
-                # Calcular promedio y calificación final
-                promedio = sum(calificaciones) / len(calificaciones)
-                
-                if promedio >= 9:
-                    calif_final = 3
-                elif promedio >= 6:
-                    calif_final = 2
+
+                # Calcular calificación general
+                if len(calificaciones) == 0:
+                    calif_final = 3  # O dime si lo quieres en 0
+                    promedio = 0
+                    detalles.append("(Todos los sub-criterios marcados como NO APLICA)")
                 else:
-                    calif_final = 1
-                
+                    promedio = sum(calificaciones) / len(calificaciones)
+                    if promedio >= 9:
+                        calif_final = 3
+                    elif promedio >= 6:
+                        calif_final = 2
+                    else:
+                        calif_final = 1
+
                 st.markdown(f"**Promedio:** {promedio:.1f} → **Calificación:** {calif_final}")
-                
+
                 datos_evaluacion.append({
                     'Maquina': maquina, 'Usuario': usuario,
                     'Criterio_ID': criterio['id'], 'Criterio': criterio['criterio'],
                     'Peso': criterio['peso'], 'Calificacion': calif_final,
-                    'Comentarios': f"Prom: {promedio:.1f} | " + " ".join(detalles),
+                    'Comentarios': " ".join(detalles),
                     'Fecha': datetime.now().strftime("%Y-%m-%d %H:%M")
                 })
+
             
             st.markdown("---")
         
@@ -912,3 +935,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
