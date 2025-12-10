@@ -410,8 +410,8 @@ def pagina_evaluar():
                     'Maquina': maquina,
                     'Fecha': datetime.now().strftime("%Y-%m-%d"),
                     'Semana': 'META_RANGO',
-                    'Venta': meta - 2.0,  # Min
-                    'Payout': meta + 2.0,  # Max
+                    'Venta': meta - 5.0,  # Min
+                    'Payout': meta + 5.0,  # Max
                     'Cambios': f"Meta Payout definida: {meta}%"
                 }
                 pd.DataFrame([payout_row]).to_csv(
@@ -910,4 +910,5 @@ def main():
         st.rerun()
 
 if __name__ == "__main__":
+
     main()
